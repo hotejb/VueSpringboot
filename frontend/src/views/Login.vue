@@ -71,9 +71,12 @@ export default {
         const response = await authAPI.login(loginForm)
         
         if (response.success) {
-          // 保存token
+          // 保存token和用户信息
           if (response.token) {
             localStorage.setItem('token', response.token)
+          }
+          if (response.data && response.data.fullName) {
+            localStorage.setItem('userName', response.data.fullName)
           }
           
           message.value = '登录成功！'
