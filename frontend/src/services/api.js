@@ -3,7 +3,10 @@ import axios from 'axios'
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000,
-  withCredentials: true // 支持session cookie
+  withCredentials: true, // 支持session cookie
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器

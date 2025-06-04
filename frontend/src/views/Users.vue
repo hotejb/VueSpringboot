@@ -6,67 +6,118 @@
         <i class="icon">➕</i>
         添加用户
       </button>
+
     </div>
 
     <div class="users-filters">
       <div class="search-box">
         <input 
           v-model="searchQuery" 
+          @input="searchUsers"
           type="text" 
-          placeholder="搜索用户..." 
+          placeholder="搜索用户名、姓名或邮箱..." 
           class="search-input"
         />
         <i class="search-icon">🔍</i>
       </div>
-      <select v-model="statusFilter" class="status-filter">
+      <select v-model="statusFilter" @change="loadUsers" class="status-filter">
         <option value="">所有状态</option>
-        <option value="active">活跃</option>
-        <option value="inactive">非活跃</option>
-        <option value="banned">已禁用</option>
+        <option value="ACTIVE">激活</option>
+        <option value="INACTIVE">禁用</option>
+        <option value="PENDING">待审核</option>
+      </select>
+      <select v-model="roleFilter" @change="loadUsers" class="role-filter">
+        <option value="">所有角色</option>
+        <option value="ADMIN">管理员</option>
+        <option value="MANAGER">经理</option>
+        <option value="USER">普通用户</option>
       </select>
     </div>
 
-    <div class="users-table">
+    <div class="users-stats">
+      <div class="stat-card">
+        <div class="stat-number">{{ totalUsers }}</div>
+        <div class="stat-label">总用户数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ activeUsers }}</div>
+        <div class="stat-label">活跃用户</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ currentPage + 1 }}</div>
+        <div class="stat-label">当前页</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ totalPages }}</div>
+        <div class="stat-label">总页数</div>
+      </div>
+    </div>
+
+    <div class="users-table" v-if="!loading">
       <div class="table-header">
         <div class="table-cell">头像</div>
-        <div class="table-cell">用户名</div>
-        <div class="table-cell">邮箱</div>
-        <div class="table-cell">状态</div>
-        <div class="table-cell">注册时间</div>
+        <div class="table-cell">用户信息</div>
+        <div class="table-cell">联系方式</div>
+        <div class="table-cell">部门职位</div>
+        <div class="table-cell">角色状态</div>
+        <div class="table-cell">创建时间</div>
         <div class="table-cell">操作</div>
       </div>
       
       <div class="table-body">
         <div 
-          v-for="user in filteredUsers" 
+          v-for="user in users" 
           :key="user.id" 
           class="table-row"
         >
           <div class="table-cell">
-            <div class="user-avatar" :style="{ background: user.avatarColor }">
-              {{ user.username.charAt(0).toUpperCase() }}
+            <div class="user-avatar" :style="{ background: getAvatarColor(user.username) }">
+              {{ user.fullName ? user.fullName.charAt(0) : user.username.charAt(0).toUpperCase() }}
             </div>
           </div>
           <div class="table-cell">
-            <span class="user-name">{{ user.username }}</span>
+            <div class="user-info">
+              <span class="user-name">{{ user.fullName || user.username }}</span>
+              <span class="user-username">@{{ user.username }}</span>
+            </div>
           </div>
           <div class="table-cell">
-            <span class="user-email">{{ user.email }}</span>
+            <div class="contact-info">
+              <span class="user-email">{{ user.email }}</span>
+              <span class="user-phone" v-if="user.phone">{{ user.phone }}</span>
+            </div>
           </div>
           <div class="table-cell">
-            <span class="status-badge" :class="user.status">
-              {{ getStatusText(user.status) }}
-            </span>
+            <div class="dept-info">
+              <span class="user-department" v-if="user.department">{{ user.department }}</span>
+              <span class="user-position" v-if="user.position">{{ user.position }}</span>
+            </div>
           </div>
           <div class="table-cell">
-            <span class="user-date">{{ user.createdAt }}</span>
+            <div class="role-status">
+              <span class="role-badge" :class="user.role.toLowerCase()">
+                {{ getRoleText(user.role) }}
+              </span>
+              <span class="status-badge" :class="user.status.toLowerCase()">
+                {{ getStatusText(user.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="table-cell">
+            <span class="user-date">{{ formatDate(user.createdAt) }}</span>
           </div>
           <div class="table-cell">
             <div class="action-buttons">
-              <button class="action-btn edit" @click="editUser(user)">
+              <button class="action-btn edit" @click="editUser(user)" title="编辑">
                 ✏️
               </button>
-              <button class="action-btn delete" @click="deleteUser(user)">
+              <button class="action-btn status" @click="toggleUserStatus(user)" title="切换状态">
+                {{ user.status === 'ACTIVE' ? '🔒' : '🔓' }}
+              </button>
+              <button class="action-btn password" @click="resetPassword(user)" title="重置密码">
+                🔑
+              </button>
+              <button class="action-btn delete" @click="deleteUser(user)" title="删除">
                 🗑️
               </button>
             </div>
@@ -75,30 +126,183 @@
       </div>
     </div>
 
-    <!-- 添加用户模态框 -->
-    <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
+    <!-- 分页控件 -->
+    <div class="pagination" v-if="totalPages > 1">
+      <button 
+        class="page-btn" 
+        :disabled="currentPage === 0"
+        @click="changePage(currentPage - 1)"
+      >
+        上一页
+      </button>
+      <span class="page-info">
+        第 {{ currentPage + 1 }} 页，共 {{ totalPages }} 页
+      </span>
+      <button 
+        class="page-btn" 
+        :disabled="currentPage >= totalPages - 1"
+        @click="changePage(currentPage + 1)"
+      >
+        下一页
+      </button>
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <p>加载中...</p>
+    </div>
+
+    <!-- 添加/编辑用户模态框 -->
+    <div v-if="showAddModal || showEditModal" class="modal-overlay" @click="closeModal">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h3>添加新用户</h3>
-          <button class="close-btn" @click="showAddModal = false">✕</button>
+          <h3>{{ showEditModal ? '编辑用户' : '添加新用户' }}</h3>
+          <button class="close-btn" @click="closeModal">✕</button>
         </div>
         <div class="modal-body">
-          <div class="form-group">
-            <label>用户名</label>
-            <input v-model="newUser.username" type="text" class="form-input" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>用户名 *</label>
+              <input 
+                v-model="currentUser.username" 
+                type="text" 
+                class="form-input"
+                :disabled="showEditModal"
+                placeholder="请输入用户名"
+              />
+            </div>
+            <div class="form-group">
+              <label>姓名 *</label>
+              <input 
+                v-model="currentUser.fullName" 
+                type="text" 
+                class="form-input"
+                placeholder="请输入真实姓名"
+              />
+            </div>
           </div>
-          <div class="form-group">
-            <label>邮箱</label>
-            <input v-model="newUser.email" type="email" class="form-input" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>邮箱 *</label>
+              <input 
+                v-model="currentUser.email" 
+                type="email" 
+                class="form-input"
+                placeholder="请输入邮箱地址"
+              />
+            </div>
+            <div class="form-group">
+              <label>手机号</label>
+              <input 
+                v-model="currentUser.phone" 
+                type="tel" 
+                class="form-input"
+                placeholder="请输入手机号"
+              />
+            </div>
           </div>
-          <div class="form-group">
-            <label>密码</label>
-            <input v-model="newUser.password" type="password" class="form-input" />
+          <div class="form-row" v-if="!showEditModal">
+            <div class="form-group">
+              <label>密码 *</label>
+              <input 
+                v-model="currentUser.password" 
+                type="password" 
+                class="form-input"
+                placeholder="请输入密码（至少6位）"
+              />
+            </div>
+            <div class="form-group">
+              <label>确认密码 *</label>
+              <input 
+                v-model="confirmPassword" 
+                type="password" 
+                class="form-input"
+                placeholder="请再次输入密码"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>部门</label>
+              <input 
+                v-model="currentUser.department" 
+                type="text" 
+                class="form-input"
+                placeholder="请输入部门"
+              />
+            </div>
+            <div class="form-group">
+              <label>职位</label>
+              <input 
+                v-model="currentUser.position" 
+                type="text" 
+                class="form-input"
+                placeholder="请输入职位"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>角色</label>
+              <select v-model="currentUser.role" class="form-input">
+                <option value="USER">普通用户</option>
+                <option value="MANAGER">经理</option>
+                <option value="ADMIN">管理员</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>状态</label>
+              <select v-model="currentUser.status" class="form-input">
+                <option value="ACTIVE">激活</option>
+                <option value="INACTIVE">禁用</option>
+                <option value="PENDING">待审核</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn secondary" @click="showAddModal = false">取消</button>
-          <button class="btn primary" @click="addUser">添加</button>
+          <button class="btn secondary" @click="closeModal">取消</button>
+          <button class="btn primary" @click="saveUser" :disabled="saving">
+            {{ saving ? '保存中...' : (showEditModal ? '更新' : '添加') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 重置密码模态框 -->
+    <div v-if="showPasswordModal" class="modal-overlay" @click="showPasswordModal = false">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <h3>重置密码</h3>
+          <button class="close-btn" @click="showPasswordModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p>为用户 <strong>{{ selectedUser?.fullName || selectedUser?.username }}</strong> 重置密码</p>
+          <div class="form-group">
+            <label>新密码</label>
+            <input 
+              v-model="newPassword" 
+              type="password" 
+              class="form-input"
+              placeholder="请输入新密码（至少6位）"
+            />
+          </div>
+          <div class="form-group">
+            <label>确认密码</label>
+            <input 
+              v-model="confirmNewPassword" 
+              type="password" 
+              class="form-input"
+              placeholder="请再次输入新密码"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn secondary" @click="showPasswordModal = false">取消</button>
+          <button class="btn primary" @click="confirmResetPassword" :disabled="saving">
+            {{ saving ? '重置中...' : '重置密码' }}
+          </button>
         </div>
       </div>
     </div>
@@ -107,103 +311,357 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import api from '../services/api'
 
 export default {
   name: 'Users',
   setup() {
     const users = ref([])
+    const loading = ref(false)
+    const saving = ref(false)
     const searchQuery = ref('')
     const statusFilter = ref('')
+    const roleFilter = ref('')
     const showAddModal = ref(false)
-    const newUser = ref({
+    const showEditModal = ref(false)
+    const showPasswordModal = ref(false)
+    
+    // 分页相关
+    const currentPage = ref(0)
+    const pageSize = ref(10)
+    const totalUsers = ref(0)
+    const totalPages = ref(0)
+    
+    // 表单数据
+    const currentUser = ref({
       username: '',
+      fullName: '',
       email: '',
+      phone: '',
+      department: '',
+      position: '',
+      role: 'USER',
+      status: 'ACTIVE',
       password: ''
     })
+    const confirmPassword = ref('')
+    const selectedUser = ref(null)
+    const newPassword = ref('')
+    const confirmNewPassword = ref('')
+    
+    // 搜索防抖
+    let searchTimeout = null
 
-    const filteredUsers = computed(() => {
-      let filtered = users.value
-
-      if (searchQuery.value) {
-        filtered = filtered.filter(user => 
-          user.username.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-        )
-      }
-
-      if (statusFilter.value) {
-        filtered = filtered.filter(user => user.status === statusFilter.value)
-      }
-
-      return filtered
+    const activeUsers = computed(() => {
+      return users.value.filter(user => user.status === 'ACTIVE').length
     })
+
+    const getAvatarColor = (username) => {
+      const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7']
+      const index = username.charCodeAt(0) % colors.length
+      return colors[index]
+    }
+
+    const getRoleText = (role) => {
+      const roleMap = {
+        ADMIN: '管理员',
+        MANAGER: '经理',
+        USER: '普通用户'
+      }
+      return roleMap[role] || role
+    }
 
     const getStatusText = (status) => {
       const statusMap = {
-        active: '活跃',
-        inactive: '非活跃',
-        banned: '已禁用'
+        ACTIVE: '激活',
+        INACTIVE: '禁用',
+        PENDING: '待审核'
       }
       return statusMap[status] || status
     }
 
-    const generateMockUsers = () => {
-      const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十']
-      const statuses = ['active', 'inactive', 'banned']
-      const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe']
-      
-      return names.map((name, index) => ({
-        id: index + 1,
-        username: name,
-        email: `${name.toLowerCase()}@example.com`,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        avatarColor: colors[Math.floor(Math.random() * colors.length)]
-      }))
+    const formatDate = (dateString) => {
+      if (!dateString) return '-'
+      const date = new Date(dateString)
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
     }
 
-    const addUser = () => {
-      if (newUser.value.username && newUser.value.email && newUser.value.password) {
-        const user = {
-          id: users.value.length + 1,
-          username: newUser.value.username,
-          email: newUser.value.email,
-          status: 'active',
-          createdAt: new Date().toLocaleDateString(),
-          avatarColor: '#667eea'
+    const loadUsers = async () => {
+      loading.value = true
+      try {
+        const params = {
+          page: currentPage.value,
+          size: pageSize.value,
+          sortBy: 'id',
+          sortDir: 'desc'
         }
-        users.value.push(user)
-        newUser.value = { username: '', email: '', password: '' }
-        showAddModal.value = false
+        
+        if (searchQuery.value.trim()) {
+          params.search = searchQuery.value.trim()
+        }
+        
+        if (statusFilter.value) {
+          params.status = statusFilter.value
+        }
+        
+        if (roleFilter.value) {
+          params.role = roleFilter.value
+        }
+        
+        const response = await api.get('/users', { params })
+        
+        if (response.success) {
+          const data = response.data
+          users.value = data.users || []
+          totalUsers.value = data.totalItems || 0
+          totalPages.value = data.totalPages || 0
+          currentPage.value = data.currentPage || 0
+        } else {
+          console.error('API返回错误:', response.message)
+          alert('获取用户列表失败: ' + response.message)
+        }
+      } catch (error) {
+        console.error('加载用户列表失败:', error)
+        if (error.response?.status === 401) {
+          alert('登录已过期，请重新登录')
+          localStorage.removeItem('isLoggedIn')
+          localStorage.removeItem('userName')
+          localStorage.removeItem('username')
+          window.location.href = '/login'
+        } else if (error.response?.status === 403) {
+          console.log('没有权限访问，跳转到登录页')
+          localStorage.removeItem('isLoggedIn')
+          localStorage.removeItem('userName')
+          localStorage.removeItem('username')
+          window.location.href = '/login'
+        } else {
+          alert('加载用户列表失败: ' + (error.response?.data?.message || error.message))
+        }
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const searchUsers = () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout)
+      }
+      searchTimeout = setTimeout(() => {
+        currentPage.value = 0
+        loadUsers()
+      }, 500)
+    }
+
+    const changePage = (page) => {
+      console.log(`切换到第${page + 1}页`)
+      currentPage.value = page
+      loadUsers()
+    }
+
+    const resetForm = () => {
+      currentUser.value = {
+        username: '',
+        fullName: '',
+        email: '',
+        phone: '',
+        department: '',
+        position: '',
+        role: 'USER',
+        status: 'ACTIVE',
+        password: ''
+      }
+      confirmPassword.value = ''
+    }
+
+    const closeModal = () => {
+      showAddModal.value = false
+      showEditModal.value = false
+      resetForm()
+    }
+
+    const validateForm = () => {
+      if (!currentUser.value.username.trim()) {
+        alert('请输入用户名')
+        return false
+      }
+      if (!currentUser.value.fullName.trim()) {
+        alert('请输入姓名')
+        return false
+      }
+      if (!currentUser.value.email.trim()) {
+        alert('请输入邮箱')
+        return false
+      }
+      if (!showEditModal.value) {
+        if (!currentUser.value.password.trim()) {
+          alert('请输入密码')
+          return false
+        }
+        if (currentUser.value.password.length < 6) {
+          alert('密码长度至少6位')
+          return false
+        }
+        if (currentUser.value.password !== confirmPassword.value) {
+          alert('两次输入的密码不一致')
+          return false
+        }
+      }
+      return true
+    }
+
+    const saveUser = async () => {
+      if (!validateForm()) return
+      
+      saving.value = true
+      try {
+        if (showEditModal.value) {
+          // 更新用户
+          const response = await api.put(`/users/${currentUser.value.id}`, currentUser.value)
+          if (response.success) {
+            alert('用户更新成功')
+            closeModal()
+            loadUsers()
+          }
+        } else {
+          // 创建用户
+          const response = await api.post('/users', currentUser.value)
+          if (response.success) {
+            alert('用户创建成功')
+            closeModal()
+            loadUsers()
+          }
+        }
+      } catch (error) {
+        console.error('保存用户失败:', error)
+        alert('保存用户失败: ' + (error.response?.data?.message || error.message))
+      } finally {
+        saving.value = false
       }
     }
 
     const editUser = (user) => {
-      // 这里可以实现编辑功能
-      // 可以打开编辑模态框或跳转到编辑页面
+      currentUser.value = { ...user }
+      showEditModal.value = true
     }
 
-    const deleteUser = (user) => {
-      if (confirm(`确定要删除用户 ${user.username} 吗？`)) {
-        users.value = users.value.filter(u => u.id !== user.id)
+    const deleteUser = async (user) => {
+      if (!confirm(`确定要删除用户 ${user.fullName || user.username} 吗？此操作不可恢复！`)) {
+        return
+      }
+      
+      try {
+        const response = await api.delete(`/users/${user.id}`)
+        if (response.success) {
+          alert('用户删除成功')
+          loadUsers()
+        }
+      } catch (error) {
+        console.error('删除用户失败:', error)
+        alert('删除用户失败: ' + (error.response?.data?.message || error.message))
       }
     }
 
+    const toggleUserStatus = async (user) => {
+      const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+      const action = newStatus === 'ACTIVE' ? '激活' : '禁用'
+      
+      if (!confirm(`确定要${action}用户 ${user.fullName || user.username} 吗？`)) {
+        return
+      }
+      
+      try {
+        const response = await api.patch(`/users/${user.id}/status`, { status: newStatus })
+        if (response.success) {
+          alert(`用户${action}成功`)
+          loadUsers()
+        }
+      } catch (error) {
+        console.error('更新用户状态失败:', error)
+        alert('更新用户状态失败: ' + (error.response?.data?.message || error.message))
+      }
+    }
+
+    const resetPassword = (user) => {
+      selectedUser.value = user
+      newPassword.value = ''
+      confirmNewPassword.value = ''
+      showPasswordModal.value = true
+    }
+
+    const confirmResetPassword = async () => {
+      if (!newPassword.value.trim()) {
+        alert('请输入新密码')
+        return
+      }
+      if (newPassword.value.length < 6) {
+        alert('密码长度至少6位')
+        return
+      }
+      if (newPassword.value !== confirmNewPassword.value) {
+        alert('两次输入的密码不一致')
+        return
+      }
+      
+      saving.value = true
+      try {
+        const response = await api.patch(`/users/${selectedUser.value.id}/password`, {
+          password: newPassword.value
+        })
+        if (response.success) {
+          alert('密码重置成功')
+          showPasswordModal.value = false
+        }
+      } catch (error) {
+        console.error('重置密码失败:', error)
+        alert('重置密码失败: ' + (error.response?.data?.message || error.message))
+      } finally {
+        saving.value = false
+      }
+    }
+
+
+
     onMounted(() => {
-      users.value = generateMockUsers()
+      loadUsers()
     })
 
     return {
       users,
+      loading,
+      saving,
       searchQuery,
       statusFilter,
+      roleFilter,
       showAddModal,
-      newUser,
-      filteredUsers,
+      showEditModal,
+      showPasswordModal,
+      currentPage,
+      totalUsers,
+      totalPages,
+      activeUsers,
+      currentUser,
+      confirmPassword,
+      selectedUser,
+      newPassword,
+      confirmNewPassword,
+      getAvatarColor,
+      getRoleText,
       getStatusText,
-      addUser,
+      formatDate,
+      loadUsers,
+      searchUsers,
+      changePage,
+      closeModal,
+      saveUser,
       editUser,
-      deleteUser
+      deleteUser,
+      toggleUserStatus,
+      resetPassword,
+      confirmResetPassword
     }
   }
 }
@@ -280,13 +738,42 @@ export default {
   color: #7f8c8d;
 }
 
-.status-filter {
+.status-filter,
+.role-filter {
   padding: 0.75rem 1rem;
   border: 2px solid #e1e8ed;
   border-radius: 8px;
   font-size: 1rem;
   background: white;
   cursor: pointer;
+  min-width: 120px;
+}
+
+.users-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
 }
 
 .users-table {
@@ -294,11 +781,12 @@ export default {
   border-radius: 15px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
   overflow: hidden;
+  margin-bottom: 2rem;
 }
 
 .table-header {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 120px 120px 120px;
+  grid-template-columns: 80px 1fr 1fr 1fr 1fr 120px 150px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 1rem;
   font-weight: 600;
@@ -313,7 +801,7 @@ export default {
 
 .table-row {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 120px 120px 120px;
+  grid-template-columns: 80px 1fr 1fr 1fr 1fr 120px 150px;
   padding: 1rem;
   border-bottom: 1px solid #f0f0f0;
   transition: background-color 0.3s ease;
@@ -341,21 +829,80 @@ export default {
   font-size: 1.1rem;
 }
 
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
 .user-name {
   font-weight: 600;
   color: #2c3e50;
+  margin-bottom: 2px;
+}
+
+.user-username {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
 }
 
 .user-email {
-  color: #7f8c8d;
+  color: #2c3e50;
+  margin-bottom: 2px;
 }
 
+.user-phone {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.dept-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-department {
+  color: #2c3e50;
+  margin-bottom: 2px;
+}
+
+.user-position {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.role-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-badge,
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-align: center;
+}
+
+.role-badge.admin {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.role-badge.manager {
+  background: rgba(241, 196, 15, 0.1);
+  color: #f39c12;
+}
+
+.role-badge.user {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
 }
 
 .status-badge.active {
@@ -364,13 +911,13 @@ export default {
 }
 
 .status-badge.inactive {
-  background: rgba(241, 196, 15, 0.1);
-  color: #f1c40f;
-}
-
-.status-badge.banned {
   background: rgba(231, 76, 60, 0.1);
   color: #e74c3c;
+}
+
+.status-badge.pending {
+  background: rgba(241, 196, 15, 0.1);
+  color: #f1c40f;
 }
 
 .user-date {
@@ -380,12 +927,12 @@ export default {
 
 .action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .action-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -393,6 +940,7 @@ export default {
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease;
+  font-size: 0.8rem;
 }
 
 .action-btn:hover {
@@ -403,8 +951,73 @@ export default {
   background: rgba(52, 152, 219, 0.1);
 }
 
+.action-btn.status {
+  background: rgba(241, 196, 15, 0.1);
+}
+
+.action-btn.password {
+  background: rgba(155, 89, 182, 0.1);
+}
+
 .action-btn.delete {
   background: rgba(231, 76, 60, 0.1);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.page-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: #7f8c8d;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* 模态框样式 */
@@ -425,7 +1038,9 @@ export default {
   background: white;
   border-radius: 15px;
   width: 90%;
-  max-width: 500px;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
@@ -454,8 +1069,15 @@ export default {
   padding: 1.5rem;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
@@ -480,6 +1102,11 @@ export default {
   border-color: #667eea;
 }
 
+.form-input:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -497,8 +1124,14 @@ export default {
   transition: transform 0.3s ease;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn.primary {
@@ -512,6 +1145,21 @@ export default {
 }
 
 /* 响应式设计 */
+@media (max-width: 1200px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: 60px 1fr 1fr 100px 120px;
+    font-size: 0.9rem;
+  }
+  
+  .table-header .table-cell:nth-child(4),
+  .table-row .table-cell:nth-child(4),
+  .table-header .table-cell:nth-child(6),
+  .table-row .table-cell:nth-child(6) {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .users-header {
     flex-direction: column;
@@ -523,17 +1171,29 @@ export default {
     flex-direction: column;
   }
   
+  .users-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
   .table-header,
   .table-row {
-    grid-template-columns: 60px 1fr 80px 80px;
-    font-size: 0.9rem;
+    grid-template-columns: 60px 1fr 80px;
+    font-size: 0.85rem;
   }
   
   .table-header .table-cell:nth-child(3),
   .table-row .table-cell:nth-child(3),
+  .table-header .table-cell:nth-child(4),
+  .table-row .table-cell:nth-child(4),
   .table-header .table-cell:nth-child(5),
-  .table-row .table-cell:nth-child(5) {
+  .table-row .table-cell:nth-child(5),
+  .table-header .table-cell:nth-child(6),
+  .table-row .table-cell:nth-child(6) {
     display: none;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
   }
   
   .page-title {

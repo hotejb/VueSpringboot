@@ -33,4 +33,9 @@ logs/
 
 # 临时文件
 *.tmp
-*.temp 
+*.temp
+
+# Cookies文件
+cookies.txt
+**/cookies.txt
+frontend-cookies.txt 

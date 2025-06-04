@@ -178,6 +178,10 @@ npm run dev
 ### Docker部署
 可以创建Dockerfile进行容器化部署。
 
+## GitHub仓库
+
+**项目地址**: https://github.com/hotejb/VueSpringboot.git
+
 ## 许可证
 
 MIT License 
