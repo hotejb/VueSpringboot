@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 export default {
@@ -78,10 +78,15 @@ export default {
     const isDropdownOpen = ref(false)
     const isUserMenuOpen = ref(false)
     const userName = ref('')
+    const isLoggedIn = ref(false)
     
-    const isLoggedIn = computed(() => {
-      return localStorage.getItem('token') !== null
-    })
+    // 检查登录状态
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem('token')
+      const storedUserName = localStorage.getItem('userName')
+      isLoggedIn.value = token !== null
+      userName.value = storedUserName || '用户'
+    }
     
     const toggleMenu = () => {
       isMenuOpen.value = !isMenuOpen.value
@@ -111,12 +116,28 @@ export default {
       localStorage.removeItem('token')
       localStorage.removeItem('userName')
       userName.value = ''
+      isLoggedIn.value = false
       isUserMenuOpen.value = false
       router.push('/login')
     }
     
+    // 监听存储变化
+    const handleStorageChange = () => {
+      checkLoginStatus()
+    }
+    
     onMounted(() => {
-      userName.value = localStorage.getItem('userName') || '用户'
+      checkLoginStatus()
+      // 监听localStorage变化
+      window.addEventListener('storage', handleStorageChange)
+      // 监听自定义登录事件
+      window.addEventListener('userLogin', checkLoginStatus)
+    })
+    
+    onUnmounted(() => {
+      // 清理事件监听器
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('userLogin', checkLoginStatus)
     })
     
     return {

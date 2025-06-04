@@ -39,7 +39,9 @@ export const authAPI = {
 }
 
 export const homeAPI = {
-  getWelcomeMessage: () => api.get('/home/welcome')
+  getWelcomeMessage: () => api.get('/home/welcome'),
+  getPublicData: () => api.get('/home'),
+  getStats: () => api.get('/stats')
 }
 
 export default api 

@@ -79,6 +79,9 @@ export default {
             localStorage.setItem('userName', response.data.fullName)
           }
           
+          // 触发登录事件通知其他组件
+          window.dispatchEvent(new Event('userLogin'))
+          
           message.value = '登录成功！'
           messageType.value = 'success'
           

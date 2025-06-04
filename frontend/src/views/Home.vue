@@ -58,11 +58,26 @@ export default {
     const testAPI = async () => {
       loading.value = true
       try {
-        const response = await homeAPI.getWelcomeMessage()
-        apiMessage.value = response.message || '后端连接成功！'
+        // 测试公开的API端点
+        const response = await homeAPI.getPublicData()
+        if (response.success) {
+          apiMessage.value = `后端连接成功！${response.message || ''}`
+        } else {
+          apiMessage.value = '后端连接成功，但返回了错误信息'
+        }
       } catch (error) {
-        apiMessage.value = '后端连接失败，请检查后端服务是否启动'
         console.error('API测试失败:', error)
+        // 如果公开端点失败，尝试统计端点
+        try {
+          const statsResponse = await homeAPI.getStats()
+          if (statsResponse.success) {
+            apiMessage.value = '后端连接成功！(通过统计接口验证)'
+          } else {
+            apiMessage.value = '后端连接失败，请检查后端服务是否启动'
+          }
+        } catch (statsError) {
+          apiMessage.value = '后端连接失败，请检查后端服务是否启动'
+        }
       } finally {
         loading.value = false
       }
