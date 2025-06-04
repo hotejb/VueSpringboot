@@ -116,11 +116,7 @@ export default {
 
 <style scoped>
 .login {
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  width: 100%;
   padding: 2rem;
 }
 
