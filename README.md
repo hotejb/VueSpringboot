@@ -1,4 +1,6 @@
-# 现代化管理系统
+# VueSpring Admin
+
+**VueSpring Admin** - A modern full-stack admin dashboard built with Vue 3 and Spring Boot.
 
 这是一个前后端分离的现代化管理系统，采用Spring Boot + Vue 3技术栈开发。
 

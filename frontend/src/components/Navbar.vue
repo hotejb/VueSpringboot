@@ -3,7 +3,7 @@
     <div class="nav-container">
       <div class="nav-brand">
         <div class="brand-icon">🚀</div>
-        <h1 class="brand-title">Vue SpringBoot</h1>
+        <h1 class="brand-title">VueSpring Admin</h1>
       </div>
       
       <div class="nav-menu" :class="{ 'nav-menu-active': isMenuOpen }">
@@ -69,6 +69,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { authAPI } from '../services/api'
 
 export default {
   name: 'Navbar',
@@ -82,9 +83,9 @@ export default {
     
     // 检查登录状态
     const checkLoginStatus = () => {
-      const token = localStorage.getItem('token')
+      const loginStatus = localStorage.getItem('isLoggedIn')
       const storedUserName = localStorage.getItem('userName')
-      isLoggedIn.value = token !== null
+      isLoggedIn.value = loginStatus === 'true'
       userName.value = storedUserName || '用户'
     }
     
@@ -112,9 +113,18 @@ export default {
       isUserMenuOpen.value = !isUserMenuOpen.value
     }
     
-    const logout = () => {
-      localStorage.removeItem('token')
+    const logout = async () => {
+      try {
+        // 调用后端退出登录API
+        await authAPI.logout()
+      } catch (error) {
+        console.error('退出登录错误:', error)
+      }
+      
+      // 清除本地存储
+      localStorage.removeItem('isLoggedIn')
       localStorage.removeItem('userName')
+      localStorage.removeItem('username')
       userName.value = ''
       isLoggedIn.value = false
       isUserMenuOpen.value = false

@@ -71,12 +71,13 @@ export default {
         const response = await authAPI.login(loginForm)
         
         if (response.success) {
-          // 保存token和用户信息
-          if (response.token) {
-            localStorage.setItem('token', response.token)
-          }
+          // 保存用户信息和登录状态
+          localStorage.setItem('isLoggedIn', 'true')
           if (response.data && response.data.fullName) {
             localStorage.setItem('userName', response.data.fullName)
+          }
+          if (response.data && response.data.username) {
+            localStorage.setItem('username', response.data.username)
           }
           
           // 触发登录事件通知其他组件

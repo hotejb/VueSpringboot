@@ -2,16 +2,14 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 10000
+  timeout: 10000,
+  withCredentials: true // 支持session cookie
 })
 
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+    // 使用session认证，不需要添加token
     return config
   },
   error => {
@@ -26,7 +24,9 @@ api.interceptors.response.use(
   },
   error => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      localStorage.removeItem('isLoggedIn')
+      localStorage.removeItem('userName')
+      localStorage.removeItem('username')
       window.location.href = '/login'
     }
     return Promise.reject(error)

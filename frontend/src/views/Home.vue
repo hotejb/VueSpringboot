@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <div class="hero-section">
-      <h1 class="hero-title">欢迎来到 Vue + SpringBoot 项目</h1>
+      <h1 class="hero-title">欢迎来到 VueSpring Admin</h1>
       <p class="hero-subtitle">现代化的全栈Web应用开发框架</p>
     </div>
 
