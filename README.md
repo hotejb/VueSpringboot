@@ -80,13 +80,6 @@ npm install
 npm run dev
 ```
 
-### 3. 系统状态检查
-
-运行系统检查脚本，确认所有服务正常：
-```bash
-./check-system.sh
-```
-
 ### 4. 访问系统
 
 #### 访问地址
