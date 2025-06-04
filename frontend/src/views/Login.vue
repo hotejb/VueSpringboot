@@ -38,7 +38,7 @@
         <div class="demo-info">
           <h3>演示账号</h3>
           <p><strong>用户名:</strong> admin</p>
-          <p><strong>密码:</strong> password</p>
+          <p><strong>密码:</strong> 123456</p>
         </div>
       </div>
     </div>

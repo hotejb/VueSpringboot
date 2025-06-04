@@ -19,7 +19,7 @@ npm config get registry
 echo ""
 echo "🔧 启动Vue开发服务器..."
 echo "🌐 前端服务将运行在: http://localhost:3000"
-echo "👤 测试账号: admin/password"
+echo "👤 测试账号: admin/123456"
 echo ""
 
 # 启动开发服务器
