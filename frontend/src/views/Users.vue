@@ -180,7 +180,7 @@ export default {
 
     const editUser = (user) => {
       // 这里可以实现编辑功能
-      console.log('编辑用户:', user)
+      // 可以打开编辑模态框或跳转到编辑页面
     }
 
     const deleteUser = (user) => {

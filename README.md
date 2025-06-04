@@ -1,6 +1,6 @@
 # 现代化管理系统
 
-这是一个前后端分离的现代化管理系统，采用Spring Boot + React技术栈开发。
+这是一个前后端分离的现代化管理系统，采用Spring Boot + Vue 3技术栈开发。
 
 ## 技术栈
 
@@ -12,12 +12,11 @@
 - **Maven** - 项目管理
 
 ### 前端
-- **React 18** - 前端框架
+- **Vue 3** - 前端框架 (Composition API)
 - **Vite** - 构建工具
-- **Ant Design** - UI组件库
-- **React Router** - 路由管理
+- **Vue Router 4** - 路由管理
 - **Axios** - HTTP客户端
-- **ECharts** - 数据可视化图表库
+- **原生CSS** - 样式设计 (响应式布局)
 
 ## 功能特性
 
@@ -27,13 +26,13 @@
 - ✅ 安全的API接口
 - ✅ 会话管理
 - ✅ 多页面导航系统
-- ✅ 仪表板 - 数据统计展示
-- ✅ 数据图表 - 进度条和性能监控
+- ✅ 仪表板 - 数据统计展示和图表
 - ✅ 用户管理 - 用户列表和操作
-- ✅ 系统设置 - 配置管理和功能开关
-- ✅ 侧边栏菜单导航
-- ✅ 移动端抽屉菜单
-- ✅ 动态内容切换
+- ✅ 系统设置 - 多标签页配置管理
+- ✅ 关于页面 - 项目信息展示
+- ✅ 动态导航栏 - 下拉菜单和用户状态
+- ✅ 移动端响应式设计
+- ✅ 现代化UI设计 - 渐变背景和动画效果
 
 ## 环境配置
 
@@ -89,16 +88,16 @@ npm run dev
 ### 4. 访问系统
 
 #### 本机访问
-- **前端应用**: http://localhost:5173 (自动跳转到登录页面)
-- **登录页面**: http://localhost:5173/login
-- **管理首页**: http://localhost:5173/home (需要登录后访问)
+- **前端应用**: http://localhost:3000 (自动跳转到登录页面)
+- **登录页面**: http://localhost:3000/login
+- **管理首页**: http://localhost:3000/ (需要登录后访问)
 - **后端API**: http://localhost:8080
 - **H2数据库控制台**: http://localhost:8080/h2-console
 
 #### 局域网访问
-- **前端应用**: http://192.168.4.165:5173
-- **登录页面**: http://192.168.4.165:5173/login
-- **管理首页**: http://192.168.4.165:5173/home
+- **前端应用**: http://192.168.4.165:3000
+- **登录页面**: http://192.168.4.165:3000/login
+- **管理首页**: http://192.168.4.165:3000/
 - **后端API**: http://192.168.4.165:8080
 - **H2数据库控制台**: http://192.168.4.165:8080/h2-console
 
@@ -127,12 +126,15 @@ npm run dev
 │   │       └── config/      # 配置类
 │   └── src/main/resources/
 │       └── application.yml  # 应用配置
-├── frontend/                # React前端
+├── frontend/                # Vue 3前端
 │   ├── src/
-│   │   ├── components/      # 组件
-│   │   ├── pages/          # 页面
+│   │   ├── components/      # 可复用组件
+│   │   ├── views/          # 页面组件
 │   │   ├── services/       # API服务
-│   │   └── utils/          # 工具函数
+│   │   ├── router/         # 路由配置
+│   │   ├── App.vue         # 主应用组件
+│   │   ├── main.js         # 应用入口
+│   │   └── style.css       # 全局样式
 │   ├── package.json
 │   └── vite.config.js
 └── README.md
@@ -158,10 +160,11 @@ npm run dev
 - H2内存数据库，支持控制台访问：`http://localhost:8080/h2-console`
 
 ### 前端开发
-- 使用React 18 + Vite构建
-- Ant Design提供现代化UI组件
-- 支持响应式设计，适配移动端
+- 使用Vue 3 + Vite构建
+- Composition API提供现代化开发体验
+- 原生CSS实现响应式设计，适配移动端
 - 使用Axios进行API调用，支持拦截器
+- Vue Router 4提供路由管理
 
 ## 部署说明
 
