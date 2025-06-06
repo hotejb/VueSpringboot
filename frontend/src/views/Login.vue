@@ -110,13 +110,14 @@ export default {
         const response = await authAPI.login(loginForm)
         
         if (response.success) {
-          // 保存用户信息和登录状态
+          // 保存JWT令牌和用户信息
           localStorage.setItem('isLoggedIn', 'true')
-          if (response.data && response.data.fullName) {
-            localStorage.setItem('userName', response.data.fullName)
-          }
-          if (response.data && response.data.username) {
-            localStorage.setItem('username', response.data.username)
+          localStorage.setItem('accessToken', response.data.accessToken)
+          localStorage.setItem('refreshToken', response.data.refreshToken)
+          
+          if (response.data && response.data.user) {
+            localStorage.setItem('userName', response.data.user.fullName)
+            localStorage.setItem('username', response.data.user.username)
           }
           
           // 触发登录事件通知其他组件

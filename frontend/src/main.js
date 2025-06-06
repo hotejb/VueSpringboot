@@ -8,7 +8,7 @@ const app = createApp(App)
 app.use(router)
 app.mount('#app')
 
-// 如果用户已登录，启动session检查
-if (localStorage.getItem('isLoggedIn') === 'true') {
+// 如果有JWT令牌，启动session检查
+if (localStorage.getItem('accessToken')) {
   startSessionCheck()
 } 

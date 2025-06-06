@@ -14,6 +14,8 @@ const clearAuthState = () => {
   localStorage.removeItem('isLoggedIn')
   localStorage.removeItem('userName')
   localStorage.removeItem('username')
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
   // 触发登录状态变化事件
   window.dispatchEvent(new Event('authStateChanged'))
 }
@@ -21,7 +23,11 @@ const clearAuthState = () => {
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    // 使用session认证，不需要添加token
+    // 添加JWT令牌到请求头
+    const accessToken = localStorage.getItem('accessToken')
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
+    }
     return config
   },
   error => {
@@ -34,11 +40,36 @@ api.interceptors.response.use(
   response => {
     return response.data
   },
-  error => {
+  async error => {
     if (error.response?.status === 401) {
-      // Session过期或未认证，清理本地状态
+      // JWT令牌过期，尝试刷新令牌
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (refreshToken && !error.config._retry) {
+        error.config._retry = true
+        
+        try {
+          const response = await axios.post('/api/v2/auth/refresh', {
+            refreshToken: refreshToken
+          })
+          
+          if (response.data.success) {
+            const newAccessToken = response.data.data.accessToken
+            localStorage.setItem('accessToken', newAccessToken)
+            
+            // 重新发送原请求
+            error.config.headers.Authorization = `Bearer ${newAccessToken}`
+            return api.request(error.config)
+          }
+        } catch (refreshError) {
+          console.log('刷新令牌失败:', refreshError)
+        }
+      }
+      
+      // 刷新失败或没有刷新令牌，清理状态并跳转登录
       clearAuthState()
-      // 如果当前不在登录页面，跳转到登录页
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
@@ -47,10 +78,10 @@ api.interceptors.response.use(
   }
 )
 
-// 定期检查session状态的函数
+// 定期检查JWT令牌状态的函数
 const checkSessionStatus = async () => {
   try {
-    await api.get('/auth/me')
+    await api.get('/v2/auth/me')
     return true
   } catch (error) {
     if (error.response?.status === 401) {
@@ -70,8 +101,8 @@ const startSessionCheck = () => {
   }
   
   sessionCheckInterval = setInterval(async () => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-    if (isLoggedIn) {
+    const accessToken = localStorage.getItem('accessToken')
+    if (accessToken) {
       await checkSessionStatus()
     }
   }, 5 * 60 * 1000) // 5分钟检查一次
@@ -85,12 +116,19 @@ const stopSessionCheck = () => {
 }
 
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  // 使用JWT认证端点
+  login: (credentials) => api.post('/v2/auth/login', credentials),
   logout: () => {
     stopSessionCheck()
-    return api.post('/auth/logout')
+    return api.post('/v2/auth/logout')
   },
-  getCurrentUser: () => api.get('/auth/me')
+  getCurrentUser: () => api.get('/v2/auth/me'),
+  refreshToken: (refreshToken) => api.post('/v2/auth/refresh', { refreshToken }),
+  
+  // 保留Session端点用于兼容
+  sessionLogin: (credentials) => api.post('/auth/login', credentials),
+  sessionLogout: () => api.post('/auth/logout'),
+  sessionGetCurrentUser: () => api.get('/auth/me')
 }
 
 export const homeAPI = {
