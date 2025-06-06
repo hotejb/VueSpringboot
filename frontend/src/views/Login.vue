@@ -87,7 +87,7 @@
 <script>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { authAPI } from '../services/api'
+import { authAPI, startSessionCheck } from '../services/api'
 
 export default {
   name: 'Login',
@@ -121,6 +121,9 @@ export default {
           
           // 触发登录事件通知其他组件
           window.dispatchEvent(new Event('userLogin'))
+          
+          // 启动session状态检查
+          startSessionCheck()
           
           message.value = '登录成功！'
           messageType.value = 'success'

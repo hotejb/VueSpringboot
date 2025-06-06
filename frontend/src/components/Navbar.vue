@@ -69,7 +69,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authAPI } from '../services/api'
+import { authAPI, stopSessionCheck } from '../services/api'
 
 export default {
   name: 'Navbar',
@@ -115,10 +115,12 @@ export default {
     
     const logout = async () => {
       try {
-        // 调用后端退出登录API
+        // 调用后端退出登录API（会自动停止session检查）
         await authAPI.logout()
       } catch (error) {
         console.error('退出登录错误:', error)
+        // 即使API调用失败，也要停止session检查
+        stopSessionCheck()
       }
       
       // 清除本地存储
@@ -136,18 +138,26 @@ export default {
       checkLoginStatus()
     }
     
+    // 监听认证状态变化
+    const handleAuthStateChange = () => {
+      checkLoginStatus()
+    }
+    
     onMounted(() => {
       checkLoginStatus()
       // 监听localStorage变化
       window.addEventListener('storage', handleStorageChange)
       // 监听自定义登录事件
       window.addEventListener('userLogin', checkLoginStatus)
+      // 监听认证状态变化事件
+      window.addEventListener('authStateChanged', handleAuthStateChange)
     })
     
     onUnmounted(() => {
       // 清理事件监听器
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('userLogin', checkLoginStatus)
+      window.removeEventListener('authStateChanged', handleAuthStateChange)
     })
     
     return {
