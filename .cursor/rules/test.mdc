@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-每次修改代码需要考虑前后端功能一致性。
-修改完代码不需要重新创建说明文档，只需要在readme简要说明即可。
-修改代码要提交github，并重启测试。
