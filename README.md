@@ -84,8 +84,6 @@ npm run dev
 
 #### 访问地址
 - **前端应用**: http://localhost:3000 (自动跳转到登录页面)
-- **登录页面**: http://localhost:3000/login
-- **管理首页**: http://localhost:3000/ (需要登录后访问)
 - **后端API**: http://localhost:8080
 - **H2数据库控制台**: http://localhost:8080/h2-console
 
