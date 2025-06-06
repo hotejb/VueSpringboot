@@ -31,7 +31,9 @@ public class UserController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String role) {
         
         try {
             Sort sort = sortDir.equalsIgnoreCase("desc") ? 
@@ -40,8 +42,11 @@ public class UserController {
             Pageable pageable = PageRequest.of(page, size, sort);
             Page<User> userPage;
             
-            if (search != null && !search.trim().isEmpty()) {
-                userPage = userService.searchUsers(search, pageable);
+            // 根据不同的查询条件调用不同的服务方法
+            if ((search != null && !search.trim().isEmpty()) || 
+                (status != null && !status.trim().isEmpty()) || 
+                (role != null && !role.trim().isEmpty())) {
+                userPage = userService.searchUsersWithFilters(search, status, role, pageable);
             } else {
                 userPage = userService.getAllUsers(pageable);
             }

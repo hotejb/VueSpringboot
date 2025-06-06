@@ -86,6 +86,74 @@ public class UserService implements UserDetailsService {
             search, search, search, pageable);
     }
     
+    // 带过滤条件的搜索用户
+    public Page<User> searchUsersWithFilters(String search, String status, String role, Pageable pageable) {
+        User.UserStatus userStatus = null;
+        User.UserRole userRole = null;
+        
+        // 解析状态参数
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                userStatus = User.UserStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // 忽略无效的状态值
+            }
+        }
+        
+        // 解析角色参数
+        if (role != null && !role.trim().isEmpty()) {
+            try {
+                userRole = User.UserRole.valueOf(role.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // 忽略无效的角色值
+            }
+        }
+        
+        // 根据不同的过滤条件组合调用相应的查询方法
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        boolean hasStatus = userStatus != null;
+        boolean hasRole = userRole != null;
+        
+        if (hasSearch && hasStatus && hasRole) {
+            // 搜索文本 + 状态 + 角色
+            return userRepository.findByStatusAndRoleAndUsernameContainingOrStatusAndRoleAndFullNameContainingOrStatusAndRoleAndEmailContaining(
+                userStatus, userRole, search,
+                userStatus, userRole, search,
+                userStatus, userRole, search,
+                pageable);
+        } else if (hasSearch && hasStatus) {
+            // 搜索文本 + 状态
+            return userRepository.findByStatusAndUsernameContainingOrStatusAndFullNameContainingOrStatusAndEmailContaining(
+                userStatus, search,
+                userStatus, search,
+                userStatus, search,
+                pageable);
+        } else if (hasSearch && hasRole) {
+            // 搜索文本 + 角色
+            return userRepository.findByRoleAndUsernameContainingOrRoleAndFullNameContainingOrRoleAndEmailContaining(
+                userRole, search,
+                userRole, search,
+                userRole, search,
+                pageable);
+        } else if (hasStatus && hasRole) {
+            // 状态 + 角色
+            return userRepository.findByStatusAndRole(userStatus, userRole, pageable);
+        } else if (hasSearch) {
+            // 仅搜索文本
+            return userRepository.findByUsernameContainingOrFullNameContainingOrEmailContaining(
+                search, search, search, pageable);
+        } else if (hasStatus) {
+            // 仅状态
+            return userRepository.findByStatus(userStatus, pageable);
+        } else if (hasRole) {
+            // 仅角色
+            return userRepository.findByRole(userRole, pageable);
+        } else {
+            // 无过滤条件，返回所有用户
+            return userRepository.findAll(pageable);
+        }
+    }
+    
     // 根据ID查找用户
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
