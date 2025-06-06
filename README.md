@@ -29,7 +29,7 @@
 - ✅ 会话管理
 - ✅ 多页面导航系统
 - ✅ 仪表板 - 数据统计展示和图表
-- ✅ 用户管理 - 用户列表和操作
+- ✅ 用户管理 - 用户列表、搜索、状态过滤、角色过滤和操作
 - ✅ 系统设置 - 多标签页配置管理
 - ✅ 关于页面 - 项目信息展示
 - ✅ 动态导航栏 - 下拉菜单和用户状态
@@ -136,6 +136,14 @@ npm run dev
 - `POST /api/auth/login` - Session登录
 - `POST /api/auth/logout` - Session退出
 - `GET /api/auth/me` - 获取用户信息
+
+### 用户管理接口
+- `GET /api/users` - 获取用户列表 (支持分页、搜索、状态过滤、角色过滤)
+- `POST /api/users` - 创建用户
+- `PUT /api/users/{id}` - 更新用户
+- `DELETE /api/users/{id}` - 删除用户
+- `PATCH /api/users/{id}/status` - 更新用户状态
+- `PATCH /api/users/{id}/password` - 重置用户密码
 
 ### 数据接口
 - `GET /api/home` - 获取首页数据
