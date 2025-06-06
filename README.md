@@ -128,14 +128,26 @@ npm run dev
 
 ## API接口
 
-### 认证接口
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/logout` - 用户退出
-- `GET /api/auth/me` - 获取当前用户信息
+### JWT认证接口 (推荐)
+- `POST /api/v2/auth/login` - JWT登录 (支持访问令牌+刷新令牌)
+- `POST /api/v2/auth/refresh` - 刷新访问令牌
+- `POST /api/v2/auth/logout` - 退出登录
+- `GET /api/v2/auth/me` - 获取当前用户信息
+
+### Session认证接口 (兼容)
+- `POST /api/auth/login` - Session登录
+- `POST /api/auth/logout` - Session退出
+- `GET /api/auth/me` - 获取用户信息
 
 ### 数据接口
 - `GET /api/home` - 获取首页数据
 - `GET /api/stats` - 获取统计数据
+
+### 安全特性
+- ✅ JWT令牌认证 (访问令牌1小时 + 刷新令牌7天)
+- ✅ API限流保护 (登录5次/分钟，API 100次/分钟)
+- ✅ BCrypt密码加密
+- ✅ 严格CORS配置
 
 ## 开发说明
 
