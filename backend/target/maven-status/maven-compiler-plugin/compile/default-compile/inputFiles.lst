@@ -3,10 +3,15 @@
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/config/SecurityConfig.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/entity/User.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/controller/AuthController.java
-/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/repository/UserRepository.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/config/JwtAuthenticationFilter.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/config/JwtSecurityConfig.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/config/SessionAuthenticationFilter.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/util/JwtUtil.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/controller/UserController.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/config/RateLimitingConfig.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/repository/UserRepository.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/DemoApplication.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/dto/ApiResponse.java
+/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/controller/JwtAuthController.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/dto/LoginRequest.java
-/Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/controller/UserController.java
 /Users/elun/Documents/cursor/test/backend/src/main/java/com/example/demo/service/UserService.java

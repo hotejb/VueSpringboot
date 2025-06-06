@@ -1,5 +1,6 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: 
+globs: 
+alwaysApply: true
 ---
+每次修改完代码不需要重新创建说明文档，只需要在readme简要说明即可。要提交github，并重启测试。
