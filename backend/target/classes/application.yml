@@ -36,6 +36,23 @@ spring:
         http-only: true
         secure: false  # 开发环境设为false，生产环境应设为true
 
+# JWT配置
+jwt:
+  secret: VueSpringAdminSecretKey2024!@#$%^&*()_+1234567890abcdefghijklmnopqrstuvwxyz
+  expiration: 3600000  # 1小时 (毫秒)
+  refresh-expiration: 604800000  # 7天 (毫秒)
+
+# Redis配置 (可选，用于存储刷新令牌)
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
 logging:
   level:
     com.example.demo: DEBUG
