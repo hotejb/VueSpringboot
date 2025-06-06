@@ -38,4 +38,7 @@ logs/
 # Cookies文件
 cookies.txt
 **/cookies.txt
-frontend-cookies.txt 
+frontend-cookies.txt
+
+# Cursor规则目录 - 永远不要提交到GitHub
+.cursor/ 
