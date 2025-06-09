@@ -3,14 +3,17 @@
     <div class="users-header">
       <h1 class="page-title">👥 用户管理</h1>
       <div class="header-actions">
-        <button class="action-btn export" @click="exportUsers" title="导出Excel">
-          📊 导出
+        <button class="excel-btn export" @click="exportUsers" title="导出Excel">
+          <i class="icon">📊</i>
+          导出
         </button>
-        <button class="action-btn template" @click="downloadTemplate" title="下载导入模板">
-          📋 模板
+        <button class="excel-btn template" @click="downloadTemplate" title="下载导入模板">
+          <i class="icon">📋</i>
+          模板
         </button>
-        <button class="action-btn import" @click="triggerImport" title="导入Excel">
-          📥 导入
+        <button class="excel-btn import" @click="triggerImport" title="导入Excel">
+          <i class="icon">📥</i>
+          导入
         </button>
         <input 
           ref="fileInput" 
@@ -927,6 +930,52 @@ export default {
 
 .add-user-btn:hover {
   transform: translateY(-2px);
+}
+
+.excel-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.excel-btn:hover {
+  transform: translateY(-1px);
+}
+
+.excel-btn.export {
+  background: #27ae60;
+}
+
+.excel-btn.export:hover {
+  background: #229954;
+}
+
+.excel-btn.template {
+  background: #3498db;
+}
+
+.excel-btn.template:hover {
+  background: #2980b9;
+}
+
+.excel-btn.import {
+  background: #e67e22;
+}
+
+.excel-btn.import:hover {
+  background: #d35400;
+}
+
+.excel-btn .icon {
+  font-size: 1rem;
 }
 
 .users-filters {
