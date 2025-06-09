@@ -2,11 +2,28 @@
   <div class="users">
     <div class="users-header">
       <h1 class="page-title">👥 用户管理</h1>
-      <button class="add-user-btn" @click="showAddModal = true">
-        <i class="icon">➕</i>
-        添加用户
-      </button>
-
+      <div class="header-actions">
+        <button class="action-btn export" @click="exportUsers" title="导出Excel">
+          📊 导出
+        </button>
+        <button class="action-btn template" @click="downloadTemplate" title="下载导入模板">
+          📋 模板
+        </button>
+        <button class="action-btn import" @click="triggerImport" title="导入Excel">
+          📥 导入
+        </button>
+        <input 
+          ref="fileInput" 
+          type="file" 
+          accept=".xlsx,.xls" 
+          @change="handleFileImport" 
+          style="display: none"
+        />
+        <button class="add-user-btn" @click="showAddModal = true">
+          <i class="icon">➕</i>
+          添加用户
+        </button>
+      </div>
     </div>
 
     <div class="users-filters">
@@ -304,10 +321,48 @@
             {{ saving ? '重置中...' : '重置密码' }}
           </button>
         </div>
+              </div>
+      </div>
+
+    <!-- 导入结果模态框 -->
+    <div v-if="showImportResultModal" class="modal-overlay" @click="showImportResultModal = false">
+      <div class="modal large" @click.stop>
+        <div class="modal-header">
+          <h3>导入结果</h3>
+          <button class="close-btn" @click="showImportResultModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="import-summary">
+            <div class="summary-item">
+              <span class="label">总行数：</span>
+              <span class="value">{{ importResult.totalRows }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">成功导入：</span>
+              <span class="value success">{{ importResult.successCount }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">失败行数：</span>
+              <span class="value error">{{ importResult.errorCount }}</span>
+            </div>
+          </div>
+          
+          <div v-if="importResult.errors && importResult.errors.length > 0" class="error-list">
+            <h4>错误详情：</h4>
+            <div class="error-items">
+              <div v-for="(error, index) in importResult.errors" :key="index" class="error-item">
+                {{ error }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn primary" @click="showImportResultModal = false">确定</button>
+        </div>
       </div>
     </div>
-  </div>
-</template>
+    </div>
+  </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
@@ -325,6 +380,7 @@ export default {
     const showAddModal = ref(false)
     const showEditModal = ref(false)
     const showPasswordModal = ref(false)
+    const showImportResultModal = ref(false)
     
     // 分页相关
     const currentPage = ref(0)
@@ -348,6 +404,13 @@ export default {
     const selectedUser = ref(null)
     const newPassword = ref('')
     const confirmNewPassword = ref('')
+    const fileInput = ref(null)
+    const importResult = ref({
+      totalRows: 0,
+      successCount: 0,
+      errorCount: 0,
+      errors: []
+    })
     
     // 搜索防抖
     let searchTimeout = null
@@ -625,6 +688,112 @@ export default {
 
 
 
+    // Excel导入导出功能
+    const exportUsers = async () => {
+      try {
+        const response = await fetch('/api/users/export', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        })
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `用户数据_${new Date().toISOString().slice(0, 10)}.xlsx`
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+          alert('用户数据导出成功')
+        } else {
+          alert('导出失败')
+        }
+      } catch (error) {
+        console.error('导出失败:', error)
+        alert('导出失败: ' + error.message)
+      }
+    }
+
+    const downloadTemplate = async () => {
+      try {
+        const response = await fetch('/api/users/import/template', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        })
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = '用户导入模板.xlsx'
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+          alert('模板下载成功')
+        } else {
+          alert('模板下载失败')
+        }
+      } catch (error) {
+        console.error('模板下载失败:', error)
+        alert('模板下载失败: ' + error.message)
+      }
+    }
+
+    const triggerImport = () => {
+      fileInput.value.click()
+    }
+
+    const handleFileImport = async (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      try {
+        const response = await fetch('/api/users/import', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: formData
+        })
+
+        const result = await response.json()
+        
+        if (result.success || result.data) {
+          importResult.value = result.data || {
+            totalRows: 0,
+            successCount: 0,
+            errorCount: 0,
+            errors: []
+          }
+          showImportResultModal.value = true
+          
+          // 如果有成功导入的数据，刷新用户列表
+          if (importResult.value.successCount > 0) {
+            loadUsers()
+          }
+        } else {
+          alert('导入失败: ' + result.message)
+        }
+      } catch (error) {
+        console.error('导入失败:', error)
+        alert('导入失败: ' + error.message)
+      } finally {
+        // 清空文件输入
+        event.target.value = ''
+      }
+    }
+
     onMounted(() => {
       loadUsers()
     })
@@ -639,6 +808,7 @@ export default {
       showAddModal,
       showEditModal,
       showPasswordModal,
+      showImportResultModal,
       currentPage,
       totalUsers,
       totalPages,
@@ -648,6 +818,8 @@ export default {
       selectedUser,
       newPassword,
       confirmNewPassword,
+      fileInput,
+      importResult,
       getAvatarColor,
       getRoleText,
       getStatusText,
@@ -661,7 +833,11 @@ export default {
       deleteUser,
       toggleUserStatus,
       resetPassword,
-      confirmResetPassword
+      confirmResetPassword,
+      exportUsers,
+      downloadTemplate,
+      triggerImport,
+      handleFileImport
     }
   }
 }
@@ -684,6 +860,55 @@ export default {
   font-weight: 700;
   color: #2c3e50;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.action-btn.export {
+  background: #27ae60;
+  color: white;
+}
+
+.action-btn.export:hover {
+  background: #229954;
+  transform: translateY(-1px);
+}
+
+.action-btn.template {
+  background: #3498db;
+  color: white;
+}
+
+.action-btn.template:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+.action-btn.import {
+  background: #e67e22;
+  color: white;
+}
+
+.action-btn.import:hover {
+  background: #d35400;
+  transform: translateY(-1px);
 }
 
 .add-user-btn {
@@ -1199,5 +1424,74 @@ export default {
   .page-title {
     font-size: 2rem;
   }
+}
+
+/* 导入结果模态框样式 */
+.modal.large {
+  max-width: 800px;
+}
+
+.import-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-item {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summary-item .label {
+  display: block;
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.summary-item .value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.summary-item .value.success {
+  color: #27ae60;
+}
+
+.summary-item .value.error {
+  color: #e74c3c;
+}
+
+.error-list {
+  margin-top: 1.5rem;
+}
+
+.error-list h4 {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+.error-items {
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.error-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #fed7d7;
+  color: #c53030;
+  font-size: 0.9rem;
+}
+
+.error-item:last-child {
+  border-bottom: none;
 }
 </style> 

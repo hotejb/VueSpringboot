@@ -3,16 +3,26 @@ package com.example.demo.controller;
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
+import com.example.demo.util.ExcelUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -149,6 +159,96 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.success("重置密码成功"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("重置密码失败: " + e.getMessage()));
+        }
+    }
+    
+    // 导出用户数据到Excel
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportUsers() {
+        try {
+            List<User> users = userService.getAllUsersForExport();
+            byte[] excelData = ExcelUtil.exportUsersToExcel(users);
+            
+            String fileName = "用户数据_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.add("Access-Control-Expose-Headers", "Content-Disposition");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // 下载导入模板
+    @GetMapping("/import/template")
+    public ResponseEntity<byte[]> downloadImportTemplate() {
+        try {
+            byte[] templateData = ExcelUtil.generateImportTemplate();
+            
+            String fileName = "用户导入模板.xlsx";
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.add("Access-Control-Expose-Headers", "Content-Disposition");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(templateData);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // 导入用户数据
+    @PostMapping("/import")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> importUsers(@RequestParam("file") MultipartFile file) {
+        try {
+            // 验证文件
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("请选择要导入的文件"));
+            }
+            
+            String fileName = file.getOriginalFilename();
+            if (fileName == null || (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("请上传Excel文件（.xlsx或.xls格式）"));
+            }
+            
+            // 解析Excel文件
+            List<User> users = ExcelUtil.importUsersFromExcel(file);
+            
+            if (users.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Excel文件中没有有效的用户数据"));
+            }
+            
+            // 批量导入用户
+            List<String> errors = userService.importUsers(users);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalRows", users.size());
+            result.put("successCount", users.size() - errors.size());
+            result.put("errorCount", errors.size());
+            result.put("errors", errors);
+            
+            if (errors.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success("用户导入成功", result));
+            } else if (errors.size() == users.size()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("用户导入失败，所有数据都有错误", result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.success("用户导入部分成功，请查看错误详情", result));
+            }
+            
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("文件读取失败: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("导入失败: " + e.getMessage()));
         }
     }
 } 

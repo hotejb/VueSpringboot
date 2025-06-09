@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -261,5 +262,68 @@ public class UserService implements UserDetailsService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
         }
+    }
+    
+    // 批量导入用户
+    public List<String> importUsers(List<User> users) {
+        List<String> errors = new ArrayList<>();
+        List<User> validUsers = new ArrayList<>();
+        
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            int rowNum = i + 2; // Excel行号（从第2行开始）
+            
+            try {
+                // 验证必填字段
+                if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+                    errors.add("第" + rowNum + "行：用户名不能为空");
+                    continue;
+                }
+                if (user.getFullName() == null || user.getFullName().trim().isEmpty()) {
+                    errors.add("第" + rowNum + "行：姓名不能为空");
+                    continue;
+                }
+                if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+                    errors.add("第" + rowNum + "行：邮箱不能为空");
+                    continue;
+                }
+                
+                // 检查用户名是否已存在
+                if (existsByUsername(user.getUsername())) {
+                    errors.add("第" + rowNum + "行：用户名 '" + user.getUsername() + "' 已存在");
+                    continue;
+                }
+                
+                // 检查邮箱是否已存在
+                if (existsByEmail(user.getEmail())) {
+                    errors.add("第" + rowNum + "行：邮箱 '" + user.getEmail() + "' 已存在");
+                    continue;
+                }
+                
+                // 加密密码
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+                
+                validUsers.add(user);
+                
+            } catch (Exception e) {
+                errors.add("第" + rowNum + "行：数据格式错误 - " + e.getMessage());
+            }
+        }
+        
+        // 批量保存有效用户
+        if (!validUsers.isEmpty()) {
+            try {
+                userRepository.saveAll(validUsers);
+            } catch (Exception e) {
+                errors.add("批量保存失败：" + e.getMessage());
+            }
+        }
+        
+        return errors;
+    }
+    
+    // 获取所有用户（不分页，用于导出）
+    public List<User> getAllUsersForExport() {
+        return userRepository.findAll();
     }
 } 

@@ -143,7 +143,14 @@ export const userAPI = {
   updateUser: (id, userData) => api.put(`/users/${id}`, userData),
   deleteUser: (id) => api.delete(`/users/${id}`),
   updateUserStatus: (id, status) => api.patch(`/users/${id}/status`, { status }),
-  resetPassword: (id, password) => api.patch(`/users/${id}/password`, { password })
+  resetPassword: (id, password) => api.patch(`/users/${id}/password`, { password }),
+  exportUsers: () => api.get('/users/export', { responseType: 'blob' }),
+  downloadTemplate: () => api.get('/users/import/template', { responseType: 'blob' }),
+  importUsers: (formData) => api.post('/users/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
 }
 
 export const statsAPI = {
