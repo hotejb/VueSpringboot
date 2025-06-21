@@ -74,7 +74,7 @@ public class JwtAuthController {
                     response.put("accessToken", accessToken);
                     response.put("refreshToken", refreshToken);
                     response.put("tokenType", "Bearer");
-                    response.put("expiresIn", 3600); // 1小时
+                    response.put("expiresIn", jwtUtil.getAccessTokenExpirationInSeconds());
                     response.put("user", Map.of(
                             "id", user.getId(),
                             "username", user.getUsername(),
@@ -119,7 +119,7 @@ public class JwtAuthController {
                     Map<String, Object> response = new HashMap<>();
                     response.put("accessToken", newAccessToken);
                     response.put("tokenType", "Bearer");
-                    response.put("expiresIn", 3600);
+                    response.put("expiresIn", jwtUtil.getAccessTokenExpirationInSeconds());
                     
                     return ResponseEntity.ok(ApiResponse.success("令牌刷新成功", response));
                 }
@@ -197,4 +197,4 @@ public class JwtAuthController {
         }
         return null;
     }
-} 
+}

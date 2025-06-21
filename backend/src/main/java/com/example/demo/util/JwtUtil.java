@@ -120,4 +120,9 @@ public class JwtUtil {
         }
         throw new IllegalArgumentException("Invalid refresh token");
     }
-} 
+
+    // 获取访问令牌的过期时间（秒）
+    public Long getAccessTokenExpirationInSeconds() {
+        return expiration / 1000;
+    }
+}

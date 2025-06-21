@@ -8,39 +8,64 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class RateLimitingConfig {
-    
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
-    
+
+    private final Map<String, BucketWrapper> buckets = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    public RateLimitingConfig() {
+        // Schedule cleanup task to run every 5 minutes
+        scheduler.scheduleAtFixedRate(this::cleanupExpiredBuckets, 5, 5, TimeUnit.MINUTES);
+    }
+
+    // Wrapper class to hold Bucket and its last access time
+    private static class BucketWrapper {
+        Bucket bucket;
+        long lastAccessTime;
+
+        public BucketWrapper(Bucket bucket) {
+            this.bucket = bucket;
+            this.lastAccessTime = System.currentTimeMillis();
+        }
+
+        public void updateLastAccessTime() {
+            this.lastAccessTime = System.currentTimeMillis();
+        }
+    }
+
     // 登录限流：每分钟最多5次尝试
     public Bucket getLoginBucket(String clientIp) {
-        return buckets.computeIfAbsent(clientIp, this::createLoginBucket);
+        BucketWrapper wrapper = buckets.computeIfAbsent(clientIp, k -> createLoginBucketWrapper());
+        wrapper.updateLastAccessTime(); // Update access time on retrieval
+        return wrapper.bucket;
     }
-    
-    private Bucket createLoginBucket(String clientIp) {
+
+    private BucketWrapper createLoginBucketWrapper() {
         Bandwidth limit = Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1)));
-        return Bucket.builder()
-                .addLimit(limit)
-                .build();
+        return new BucketWrapper(Bucket.builder().addLimit(limit).build());
     }
-    
+
     // API限流：每分钟最多100次请求
     public Bucket getApiBucket(String clientIp) {
-        return buckets.computeIfAbsent("api_" + clientIp, this::createApiBucket);
+        BucketWrapper wrapper = buckets.computeIfAbsent("api_" + clientIp, k -> createApiBucketWrapper());
+        wrapper.updateLastAccessTime(); // Update access time on retrieval
+        return wrapper.bucket;
     }
-    
-    private Bucket createApiBucket(String clientIp) {
+
+    private BucketWrapper createApiBucketWrapper() {
         Bandwidth limit = Bandwidth.classic(100, Refill.intervally(100, Duration.ofMinutes(1)));
-        return Bucket.builder()
-                .addLimit(limit)
-                .build();
+        return new BucketWrapper(Bucket.builder().addLimit(limit).build());
     }
-    
+
     // 清理过期的bucket
     public void cleanupExpiredBuckets() {
-        // 这里可以实现清理逻辑，定期清理不活跃的IP
-        // 为了简化，暂时不实现
+        long cutoffTime = System.currentTimeMillis() - Duration.ofHours(1).toMillis(); // Remove buckets not accessed in the last 1 hour
+        buckets.entrySet().removeIf(entry -> entry.getValue().lastAccessTime < cutoffTime);
+        System.out.println("Cleaned up expired buckets. Current size: " + buckets.size());
     }
-} 
+}

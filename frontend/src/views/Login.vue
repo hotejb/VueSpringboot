@@ -33,6 +33,7 @@
                   placeholder="用户名"
                   required
                   class="form-input"
+                  autocomplete="username"
                 />
               </div>
             </div>
@@ -47,6 +48,7 @@
                   placeholder="密码"
                   required
                   class="form-input"
+                  autocomplete="current-password"
                 />
               </div>
             </div>
@@ -527,4 +529,4 @@ export default {
     opacity: 0.5;
   }
 }
-</style> 
+</style>
