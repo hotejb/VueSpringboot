@@ -9,10 +9,23 @@ export function usePermissions() {
   
   // 初始化用户权限
   const initPermissions = () => {
-    const storedRole = localStorage.getItem('userRole') || ''
-    const storedPermissions = JSON.parse(localStorage.getItem('userPermissions') || '[]')
+    // 从JWT令牌获取用户信息
+    const accessToken = localStorage.getItem('accessToken')
+    if (accessToken) {
+      try {
+        // 解析JWT令牌获取用户信息
+        const payload = JSON.parse(atob(accessToken.split('.')[1]))
+        userRole.value = localStorage.getItem('userRole') || ''
+      } catch (error) {
+        console.error('解析JWT令牌失败:', error)
+      }
+    }
     
-    userRole.value = storedRole
+    // 兼容原有的localStorage方式
+    if (!userRole.value) {
+      userRole.value = localStorage.getItem('userRole') || ''
+    }
+    const storedPermissions = JSON.parse(localStorage.getItem('userPermissions') || '[]')
     userPermissions.value = storedPermissions
   }
   
@@ -58,7 +71,7 @@ export function usePermissions() {
   const isManager = computed(() => userRole.value === 'MANAGER' || userRole.value === 'ADMIN')
   const isUser = computed(() => userRole.value === 'USER')
   
-  // 用户管理权限（ADMIN角色默认拥有所有权限，MANAGER角色拥有查看和部分操作权限）
+  // 用户管理权限（基于角色的权限控制）
   const canViewUsers = computed(() => 
     userRole.value === 'ADMIN' || 
     userRole.value === 'MANAGER' || 
@@ -94,7 +107,7 @@ export function usePermissions() {
     hasPermission('user:password')
   )
   
-  // 角色管理权限
+  // 角色管理权限（仅ADMIN可以管理角色）
   const canViewRoles = computed(() => 
     userRole.value === 'ADMIN' || 
     hasPermission('role:view')
@@ -116,7 +129,7 @@ export function usePermissions() {
     hasPermission('role:assign')
   )
   
-  // 权限管理权限
+  // 权限管理权限（仅ADMIN可以管理权限）
   const canViewPermissions = computed(() => 
     userRole.value === 'ADMIN' || 
     hasPermission('permission:view')
@@ -134,6 +147,7 @@ export function usePermissions() {
     hasPermission('permission:delete')
   )
   
+  // 系统管理权限
   const canViewSystem = computed(() => hasPermission('system:settings'))
   const canMonitorSystem = computed(() => hasPermission('system:monitor'))
   const canBackupSystem = computed(() => hasPermission('system:backup'))
@@ -179,6 +193,7 @@ export function usePermissions() {
     canEditPermissions,
     canDeletePermissions,
     
+    // 系统管理权限
     canViewSystem,
     canMonitorSystem,
     canBackupSystem
