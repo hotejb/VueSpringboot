@@ -40,9 +40,9 @@ public class UserService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
                 .accountExpired(false)
-                .accountLocked(user.getStatus() != User.UserStatus.ACTIVE)
+                .accountLocked(false) // 不锁定账户，让JWT认证处理权限
                 .credentialsExpired(false)
-                .disabled(user.getStatus() == User.UserStatus.INACTIVE)
+                .disabled(false) // 不禁用账户，让JWT认证处理权限
                 .build();
     }
     

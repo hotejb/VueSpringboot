@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT测试</title>
+</head>
+<body>
+    <h1>JWT令牌测试</h1>
+    <button onclick="checkToken()">检查令牌</button>
+    <button onclick="testAPI()">测试API</button>
+    <button onclick="clearStorage()">清除存储</button>
+    <div id="result"></div>
+
+    <script>
+        function checkToken() {
+            const token = localStorage.getItem('accessToken');
+            const result = document.getElementById('result');
+            
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const now = Math.floor(Date.now() / 1000);
+                    const isExpired = payload.exp < now;
+                    
+                    result.innerHTML = `
+                        <h3>令牌信息:</h3>
+                        <p>用户: ${payload.sub}</p>
+                        <p>签发时间: ${new Date(payload.iat * 1000).toLocaleString()}</p>
+                        <p>过期时间: ${new Date(payload.exp * 1000).toLocaleString()}</p>
+                        <p>是否过期: ${isExpired ? '是' : '否'}</p>
+                        <p>令牌: ${token.substring(0, 50)}...</p>
+                    `;
+                } catch (e) {
+                    result.innerHTML = '<p style="color: red;">令牌格式错误</p>';
+                }
+            } else {
+                result.innerHTML = '<p style="color: red;">没有找到令牌</p>';
+            }
+        }
+
+        async function testAPI() {
+            const token = localStorage.getItem('accessToken');
+            const result = document.getElementById('result');
+            
+            if (!token) {
+                result.innerHTML = '<p style="color: red;">没有令牌</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/11/status', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status: 'ACTIVE' })
+                });
+
+                const data = await response.json();
+                result.innerHTML = `
+                    <h3>API测试结果:</h3>
+                    <p>状态码: ${response.status}</p>
+                    <p>响应: ${JSON.stringify(data, null, 2)}</p>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p style="color: red;">错误: ${error.message}</p>`;
+            }
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('result').innerHTML = '<p>存储已清除</p>';
+        }
+    </script>
+</body>
+</html> 

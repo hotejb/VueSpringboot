@@ -49,15 +49,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 验证token并设置认证上下文
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             
-            UserDetails userDetails = userService.loadUserByUsername(username);
-            
-            // 验证token有效性
-            if (jwtUtil.validateToken(jwtToken, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = 
-                    new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            try {
+                // 验证token有效性（不需要UserDetails，直接验证JWT）
+                if (jwtUtil.validateTokenFormat(jwtToken)) {
+                    // 获取用户信息用于权限设置
+                    UserDetails userDetails = userService.loadUserByUsername(username);
+                    
+                    UsernamePasswordAuthenticationToken authToken = 
+                        new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                logger.warn("JWT认证失败: " + e.getMessage());
             }
         }
         

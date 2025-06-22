@@ -23,9 +23,17 @@
               <i class="icon">📈</i>
               <span>数据面板</span>
             </router-link>
-            <router-link to="/users" class="dropdown-item" @click="closeMenu">
+            <router-link v-if="canViewUsers" to="/users" class="dropdown-item" @click="closeMenu">
               <i class="icon">👥</i>
               <span>用户管理</span>
+            </router-link>
+            <router-link v-if="canViewRoles" to="/roles" class="dropdown-item" @click="closeMenu">
+              <i class="icon">🛡️</i>
+              <span>角色管理</span>
+            </router-link>
+            <router-link v-if="canViewPermissions" to="/permissions" class="dropdown-item" @click="closeMenu">
+              <i class="icon">🔑</i>
+              <span>权限管理</span>
             </router-link>
             <router-link to="/settings" class="dropdown-item" @click="closeMenu">
               <i class="icon">⚙️</i>
@@ -70,6 +78,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI, stopSessionCheck } from '../services/api'
+import { usePermissions } from '../composables/usePermissions'
 
 export default {
   name: 'Navbar',
@@ -80,6 +89,18 @@ export default {
     const isUserMenuOpen = ref(false)
     const userName = ref('')
     const isLoggedIn = ref(false)
+    
+    // 权限控制
+    const {
+      initPermissions,
+      canViewUsers,
+      canViewRoles,
+      canViewPermissions,
+      isAdmin
+    } = usePermissions()
+    
+    // 初始化权限
+    initPermissions()
     
     // 检查登录状态
     const checkLoginStatus = () => {
@@ -171,7 +192,12 @@ export default {
       showDropdown,
       hideDropdown,
       toggleUserMenu,
-      logout
+      logout,
+      // 权限控制
+      canViewUsers,
+      canViewRoles,
+      canViewPermissions,
+      isAdmin
     }
   }
 }

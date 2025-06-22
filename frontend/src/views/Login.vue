@@ -120,6 +120,10 @@ export default {
           if (response.data && response.data.user) {
             localStorage.setItem('userName', response.data.user.fullName)
             localStorage.setItem('username', response.data.user.username)
+            localStorage.setItem('userRole', response.data.user.role)
+            
+            // 获取用户权限（这里暂时使用空数组，后续可以从API获取）
+            localStorage.setItem('userPermissions', JSON.stringify([]))
           }
           
           // 触发登录事件通知其他组件

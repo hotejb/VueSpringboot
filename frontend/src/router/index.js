@@ -3,6 +3,8 @@ import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Users from '../views/Users.vue'
+import Roles from '../views/Roles.vue'
+import Permissions from '../views/Permissions.vue'
 import Settings from '../views/Settings.vue'
 import About from '../views/About.vue'
 
@@ -29,6 +31,18 @@ const routes = [
     path: '/users',
     name: 'Users',
     component: Users,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/roles',
+    name: 'Roles',
+    component: Roles,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/permissions',
+    name: 'Permissions',
+    component: Permissions,
     meta: { requiresAuth: true }
   },
   {

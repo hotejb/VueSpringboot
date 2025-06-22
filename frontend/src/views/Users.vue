@@ -2,16 +2,25 @@
   <div class="users">
     <div class="users-header">
       <h1 class="page-title">👥 用户管理</h1>
+      
+      <!-- 权限提示 -->
+      <div class="permission-info" v-if="!isAdmin">
+        <div class="permission-badge" :class="userRole.toLowerCase()">
+          <span class="role-icon">{{ userRole === 'MANAGER' ? '👔' : '👤' }}</span>
+          <span class="role-text">{{ userRole === 'MANAGER' ? '经理权限' : '只读权限' }}</span>
+        </div>
+      </div>
+      
       <div class="header-actions">
-        <button class="excel-btn export" @click="exportUsers" title="导出Excel">
+        <button v-if="canExportUsers" class="excel-btn export" @click="exportUsers" title="导出Excel">
           <i class="icon">📊</i>
           导出
         </button>
-        <button class="excel-btn template" @click="downloadTemplate" title="下载导入模板">
+        <button v-if="canImportUsers" class="excel-btn template" @click="downloadTemplate" title="下载导入模板">
           <i class="icon">📋</i>
           模板
         </button>
-        <button class="excel-btn import" @click="triggerImport" title="导入Excel">
+        <button v-if="canImportUsers" class="excel-btn import" @click="triggerImport" title="导入Excel">
           <i class="icon">📥</i>
           导入
         </button>
@@ -22,7 +31,7 @@
           @change="handleFileImport" 
           style="display: none"
         />
-        <button class="add-user-btn" @click="showAddModal = true">
+        <button v-if="canCreateUsers" class="add-user-btn" @click="showAddModal = true">
           <i class="icon">➕</i>
           添加用户
         </button>
@@ -128,16 +137,31 @@
           </div>
           <div class="table-cell">
             <div class="action-buttons">
-              <button class="action-btn edit" @click="editUser(user)" title="编辑">
+              <button v-if="canEditUsers" class="action-btn edit" @click="editUser(user)" title="编辑">
                 ✏️
               </button>
-              <button class="action-btn status" @click="toggleUserStatus(user)" title="切换状态">
+              <button v-else-if="canViewUsers" class="action-btn edit disabled" title="无编辑权限">
+                ✏️
+              </button>
+              
+              <button v-if="canChangeUserStatus" class="action-btn status" @click="toggleUserStatus(user)" title="切换状态">
                 {{ user.status === 'ACTIVE' ? '🔒' : '🔓' }}
               </button>
-              <button class="action-btn password" @click="resetPassword(user)" title="重置密码">
+              <button v-else-if="canViewUsers" class="action-btn status disabled" title="无状态切换权限">
+                {{ user.status === 'ACTIVE' ? '🔒' : '🔓' }}
+              </button>
+              
+              <button v-if="canResetPassword" class="action-btn password" @click="resetPassword(user)" title="重置密码">
                 🔑
               </button>
-              <button class="action-btn delete" @click="deleteUser(user)" title="删除">
+              <button v-else-if="canViewUsers" class="action-btn password disabled" title="无密码重置权限">
+                🔑
+              </button>
+              
+              <button v-if="canDeleteUsers" class="action-btn delete" @click="deleteUser(user)" title="删除">
+                🗑️
+              </button>
+              <button v-else-if="canViewUsers" class="action-btn delete disabled" title="无删除权限">
                 🗑️
               </button>
             </div>
@@ -369,11 +393,30 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import api from '../services/api'
+import api, { userAPI } from '../services/api'
+import { usePermissions } from '../composables/usePermissions'
 
 export default {
   name: 'Users',
   setup() {
+    // 权限控制
+    const {
+      initPermissions,
+      userRole,
+      canViewUsers,
+      canCreateUsers,
+      canEditUsers,
+      canDeleteUsers,
+      canImportUsers,
+      canExportUsers,
+      canChangeUserStatus,
+      canResetPassword,
+      isAdmin
+    } = usePermissions()
+    
+    // 初始化权限
+    initPermissions()
+    
     const users = ref([])
     const loading = ref(false)
     const saving = ref(false)
@@ -640,7 +683,7 @@ export default {
       }
       
       try {
-        const response = await api.patch(`/users/${user.id}/status`, { status: newStatus })
+        const response = await userAPI.updateUserStatus(user.id, newStatus)
         if (response.success) {
           alert(`用户${action}成功`)
           loadUsers()
@@ -674,9 +717,7 @@ export default {
       
       saving.value = true
       try {
-        const response = await api.patch(`/users/${selectedUser.value.id}/password`, {
-          password: newPassword.value
-        })
+        const response = await userAPI.resetPassword(selectedUser.value.id, newPassword.value)
         if (response.success) {
           alert('密码重置成功')
           showPasswordModal.value = false
@@ -840,7 +881,18 @@ export default {
       exportUsers,
       downloadTemplate,
       triggerImport,
-      handleFileImport
+      handleFileImport,
+      // 权限控制
+      userRole,
+      canViewUsers,
+      canCreateUsers,
+      canEditUsers,
+      canDeleteUsers,
+      canImportUsers,
+      canExportUsers,
+      canChangeUserStatus,
+      canResetPassword,
+      isAdmin
     }
   }
 }
@@ -856,6 +908,44 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.permission-info {
+  display: flex;
+  align-items: center;
+}
+
+.permission-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 2px solid;
+}
+
+.permission-badge.manager {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border-color: #f5576c;
+}
+
+.permission-badge.user {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border-color: #00f2fe;
+}
+
+.role-icon {
+  font-size: 1.1rem;
+}
+
+.role-text {
+  font-weight: 600;
 }
 
 .page-title {
@@ -1219,6 +1309,17 @@ export default {
 
 .action-btn:hover {
   transform: scale(1.1);
+}
+
+.action-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #e0e0e0 !important;
+  color: #999;
+}
+
+.action-btn.disabled:hover {
+  transform: none;
 }
 
 .action-btn.edit {
