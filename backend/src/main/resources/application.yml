@@ -38,7 +38,7 @@ spring:
 
 # JWT配置
 jwt:
-  secret: VueSpringAdminSecretKey2024!@#$%^&*()_+1234567890abcdefghijklmnopqrstuvwxyz
+  secret: ${JWT_SECRET:VueSpringAdminSecretKey2024!@#$%^&*()_+1234567890abcdefghijklmnopqrstuvwxyz}
   expiration: 3600000  # 1小时 (毫秒)
   refresh-expiration: 604800000  # 7天 (毫秒)
 
