@@ -13,7 +13,6 @@ const api = axios.create({
 const clearAuthState = () => {
   localStorage.removeItem('isLoggedIn')
   localStorage.removeItem('userName')
-  localStorage.removeItem('username')
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   // 触发登录状态变化事件

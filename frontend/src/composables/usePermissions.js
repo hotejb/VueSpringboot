@@ -15,6 +15,7 @@ export function usePermissions() {
       try {
         // 解析JWT令牌获取用户信息
         const payload = JSON.parse(atob(accessToken.split('.')[1]))
+        // 假设JWT的sub字段是用户名，角色信息从localStorage获取
         userRole.value = localStorage.getItem('userRole') || ''
       } catch (error) {
         console.error('解析JWT令牌失败:', error)

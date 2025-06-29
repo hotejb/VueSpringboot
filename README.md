@@ -14,10 +14,10 @@
 - **Maven** - 项目管理
 
 ### 前端
-- **Vue 3** - 前端框架 (Composition API)
-- **Vite** - 构建工具
+- **Vue 3.5.x** - 前端框架 (Composition API)
+- **Vite 7.x** - 构建工具
 - **Vue Router 4** - 路由管理
-- **Axios** - HTTP客户端
+- **Axios 1.x** - HTTP客户端
 - **原生CSS** - 样式设计 (响应式布局)
 
 ## 功能特性
