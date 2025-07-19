@@ -16,8 +16,15 @@
   "dependencies": {
     "@vitejs/plugin-vue": "^6.0.0",
     "axios": "^1.10.0",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persistedstate": "^3.2.1",
     "vite": "^7.0.0",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "unplugin-auto-import": "^0.17.2",
+    "unplugin-vue-components": "^0.25.2"
   }
 }

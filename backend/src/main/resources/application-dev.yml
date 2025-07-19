@@ -1,0 +1,44 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 20000
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  
+  # Redis配置（开发环境可选，如果没有Redis服务会自动跳过）
+  # data:
+  #   redis:
+  #     host: localhost
+  #     port: 6379
+  #     timeout: 2000ms
+  #     lettuce:
+  #       pool:
+  #         max-active: 8
+  #         max-idle: 8
+  #         min-idle: 0
+
+# 开发环境日志配置
+logging:
+  level:
+    com.example.demo: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG

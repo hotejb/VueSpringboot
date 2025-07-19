@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # 开发环境PostgreSQL
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: vuespring-postgres-dev
+    environment:
+      POSTGRES_DB: vuespring_admin_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - vuespring-dev-network
+
+  # 开发环境Redis
+  redis-dev:
+    image: redis:7-alpine
+    container_name: vuespring-redis-dev
+    ports:
+      - "6380:6379"
+    networks:
+      - vuespring-dev-network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  vuespring-dev-network:
+    driver: bridge

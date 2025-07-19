@@ -42,16 +42,18 @@ jwt:
   expiration: 3600000  # 1小时 (毫秒)
   refresh-expiration: 604800000  # 7天 (毫秒)
 
-# Redis配置 (可选，用于存储刷新令牌)
-  redis:
-    host: localhost
-    port: 6379
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
+# Redis配置 (开发环境可选，如果没有Redis服务会自动跳过)
+# 如需启用Redis，请取消注释以下配置
+#  data:
+#    redis:
+#      host: localhost
+#      port: 6379
+#      timeout: 2000ms
+#      lettuce:
+#        pool:
+#          max-active: 8
+#          max-idle: 8
+#          min-idle: 0
 
 logging:
   level:
